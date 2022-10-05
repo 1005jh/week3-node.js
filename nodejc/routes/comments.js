@@ -3,7 +3,6 @@ const router = express.Router();
 const Comments = require("../schemas/comment");
 
 //* 댓글 작성
-
 router.post("/comments/:postId", async (req, res) => {
   try {
     const { postId } = req.params;
@@ -39,12 +38,12 @@ router.get("/comments/:postId", async (req, res) => {
 router.put("/comments/:commentId", async (req, res) => {
   const { commentId } = req.params;
   const { pw, content } = req.body;
-  const comment = await Comments.findById(commentId);
-  if (content.length === 0 && pw == comment.pw) {
+  const comment = await Comments.findOne({ _id: commentId });
+  if (content.length === 0) {
     res.json({ message: "댓글을 입력해주세요" });
   }
-  if (pw == comment.pw) {
-    await Comments.updateOne({ commentId: commentId }, { $set: { content } });
+  if (pw === comment.pw) {
+    await Comments.updateOne({ _id: commentId }, { $set: { content } });
   }
   res.json({ result: true, message: "댓글수정했습니다" });
 });
@@ -54,10 +53,11 @@ router.delete("/comments/:commentId", async (req, res) => {
   const { commentId } = req.params;
   console.log(commentId);
   const { pw } = req.body;
-  const comment = await Comments.findOne({ commentId });
-  if (pw == comment.pw) {
-    await Comments.deleteOne({ commentId });
-  } else if (comment.length) {
+  const comment = await Comments.findOne({ _id: commentId });
+  if (pw === comment.pw) {
+    await Comments.deleteOne({ _id: commentId });
+  }
+  if (pw !== comment.pw) {
     res.json({ message: "비번틀린대용?" });
   }
   res.json({ message: "게시글이 삭제됐습니다." });

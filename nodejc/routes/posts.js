@@ -5,12 +5,14 @@ const router = express.Router();
 const Posts = require("../schemas/post");
 router.post("/posts", async (req, res) => {
   const { user, pw, title, content } = req.body;
+  const createdAt = new Date();
 
   const createdPosts = await Posts.create({
     user,
     pw,
     title,
     content,
+    createdAt,
   });
 
   res.json({ posts: createdPosts });
@@ -18,7 +20,9 @@ router.post("/posts", async (req, res) => {
 
 //*게시글 조회
 router.get("/posts", async (req, res, next) => {
-  const posts = await Posts.find({}).sort({ createdAt: "desc" });
+  const posts = await Posts.find({})
+    .select("user title content createdAt")
+    .sort({ createdAt: "desc" });
   res.json({ posts: posts });
 });
 
@@ -27,7 +31,7 @@ router.get("/posts/:postId", async (req, res) => {
   const { postId } = req.params;
   console.log(postId);
 
-  const detail = await Posts.findById(postId);
+  const detail = await Posts.findOne({ _id: postId });
   console.log(detail);
   res.json({ detail: detail });
 });
@@ -37,17 +41,14 @@ router.put("/posts/:postId", async (req, res) => {
   const { postId } = req.params;
   console.log(postId);
   const { pw, content, title } = req.body;
-  const post = await Posts.findById(postId);
+  const post = await Posts.findOne({ _id: postId });
   console.log(post);
   if (pw !== post.pw) {
     res.status(400).json({ errorMessage: "비밀번호가 틀렸습니다." });
     return;
   }
   if (post.length) {
-    await Posts.updateOne(
-      { postId: Number(postId) },
-      { $set: { content, title } }
-    );
+    await Posts.updateOne({ _id: postId }, { $set: { content, title } });
   }
   res.json({ result: true, message: "게시글을 수정했습니다." });
 });
@@ -56,12 +57,12 @@ router.put("/posts/:postId", async (req, res) => {
 router.delete("/posts/:postId", async (req, res) => {
   const { postId } = req.params;
   const { pw } = req.body;
-  const post = await Posts.findById(postId);
+  const post = await Posts.findOne({ _id: postId });
   if (pw !== post.pw) {
     res.status(400).json({ errorMessage: "비밀번호가 틀렸습니다." });
     return;
   }
-  if (post.length) {
+  if (pw === post.pw) {
     await Posts.deleteOne({ postId });
   }
   res.json({ result: "success", message: "게시글이 삭제됐습니다." });
